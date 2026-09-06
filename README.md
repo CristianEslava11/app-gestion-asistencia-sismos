@@ -2,9 +2,11 @@
 
 Taller de la Electiva de Bases de Datos. Una persona encargada registra solicitudes de personas afectadas por sismos y realiza seguimiento a su atención.
 
-**Estado:** frontend y backend implementados, tabla creada en AWS e integración real verificada desde Express. Publicación en Render pendiente.
+**Estado:** frontend y backend implementados, tabla creada en AWS, integración real verificada y aplicación publicada en Render.
 
-**URL pública:** pendiente de desplegar.  
+**URL pública:** [https://asistencia-sismos.onrender.com/](https://asistencia-sismos.onrender.com/)
+
+**Acceso de evaluación:** solicitar al grupo las credenciales de demostración. No se publican en este repositorio.
 **Integrantes:** completar con el grupo.
 
 ## Guías del proyecto
@@ -162,7 +164,9 @@ Primero verificar la app con DynamoDB real. Tener la tabla y el acceso IAM listo
 4. Completar `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `DEMO_USER` y `DEMO_PASSWORD` en Render. Si se usan credenciales temporales, agregar también `AWS_SESSION_TOKEN` y prever su renovación.
 5. Desplegar. El comando de construcción es `npm ci --include=dev && npm run build`; el de inicio, `npm start`. La raíz del servicio es la raíz del repositorio, no `backend` ni `frontend`.
 6. Abrir la URL HTTPS, introducir el acceso de evaluación y completar el recorrido de prueba indicado abajo.
-7. Sustituir “URL pública: pendiente” al inicio de este README por el enlace real.
+7. Registrar la URL obtenida y las credenciales de evaluación en el medio privado acordado con el profesor. No incluir contraseñas ni claves de AWS en el repositorio.
+
+La instancia actual está disponible en [https://asistencia-sismos.onrender.com/](https://asistencia-sismos.onrender.com/). Cualquier cambio enviado a la rama `main` activa un nuevo despliegue automático en Render.
 
 También puede crearse un Web Service manual con los mismos comandos y variables. `/health` es una sonda pública de proceso, **no verifica la conexión con DynamoDB**; comprobar la base con una operación real de la aplicación. [Blueprints de Render](https://render.com/docs/blueprint-spec).
 
