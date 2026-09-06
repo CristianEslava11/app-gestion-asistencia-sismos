@@ -1,0 +1,20 @@
+{
+  "name": "asistencia-sismos",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": ["backend", "frontend"],
+  "engines": { "node": ">=22.12.0 <25" },
+  "scripts": {
+    "dev": "concurrently -k -n API,WEB \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:demo": "concurrently -k -n API,WEB \"npm run dev:backend:demo\" \"npm run dev:frontend\"",
+    "dev:backend": "node --env-file-if-exists=backend/.env --watch backend/src/server.js",
+    "dev:backend:demo": "node --env-file-if-exists=backend/.env --watch backend/src/server.js --demo",
+    "dev:frontend": "npm run dev --workspace frontend",
+    "build": "npm run build --workspace frontend",
+    "start": "node --env-file-if-exists=backend/.env backend/src/server.js",
+    "test": "node --test backend/test/*.test.js",
+    "db:create": "node --env-file-if-exists=backend/.env backend/scripts/create-table.js",
+    "db:seed": "node --env-file-if-exists=backend/.env backend/scripts/seed.js"
+  },
+  "devDependencies": { "concurrently": "^9.2.0" }
+}

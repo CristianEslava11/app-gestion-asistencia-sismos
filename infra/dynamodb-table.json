@@ -1,0 +1,6 @@
+{
+  "TableName": "SolicitudesAsistencia",
+  "AttributeDefinitions": [{ "AttributeName": "solicitudId", "AttributeType": "S" }],
+  "KeySchema": [{ "AttributeName": "solicitudId", "KeyType": "HASH" }],
+  "BillingMode": "PAY_PER_REQUEST"
+}

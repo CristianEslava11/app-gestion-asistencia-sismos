@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: asistencia-sismos
+    runtime: node
+    plan: free
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: 22.18.0
+      - key: NODE_ENV
+        value: production
+      - key: STORAGE_MODE
+        value: dynamodb
+      - key: AWS_REGION
+        value: us-east-2
+      - key: DYNAMODB_TABLE
+        value: SolicitudesAsistencia
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: DEMO_USER
+        sync: false
+      - key: DEMO_PASSWORD
+        sync: false

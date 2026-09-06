@@ -1,0 +1,9 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Sid": "OperacionesDelTaller",
+    "Effect": "Allow",
+    "Action": ["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:UpdateItem", "dynamodb:Scan"],
+    "Resource": "arn:aws:dynamodb:us-east-2:494110626446:table/SolicitudesAsistencia"
+  }]
+}
