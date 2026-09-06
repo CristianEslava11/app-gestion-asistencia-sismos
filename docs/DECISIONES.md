@@ -133,6 +133,8 @@ Listo en el código: API, validación, repositorio DynamoDB, memoria explícita 
 
 La política IAM quedó adjunta y el perfil local `asistencia-sismos` pudo ejecutar `Scan`, `PutItem`, `GetItem` y `UpdateItem` a través del script y de Express. Se cargaron dos ejemplos ficticios; una actualización temporal se leyó desde DynamoDB y el ejemplo se restauró a `PENDIENTE`.
 
-Pendiente: revisar el frontend con el compañero, crear el repositorio remoto si no existe y publicar/verificar Render. El despliegue todavía requiere configurar sus secretos y repetir el recorrido contra DynamoDB desde el servicio publicado.
+El frontend está terminado para el alcance inicial: muestra el almacenamiento activo, lista, filtra, registra, consulta, edita y cambia estado; el formulario se presenta en un panel accesible y el listado se adapta a pantallas pequeñas.
+
+Pendiente: crear el repositorio remoto si no existe y publicar/verificar Render. El despliegue todavía requiere configurar sus secretos y repetir el recorrido contra DynamoDB desde el servicio publicado.
 
 Antes de entregar, ejecutar el recorrido del README en la URL real y verificar el ítem desde la consola AWS. Documentar el tiempo de reactivación de Render junto al enlace. No se incorporarán mapas, adjuntos, notificaciones ni gestión de cuentas salvo que el grupo amplíe expresamente el alcance.

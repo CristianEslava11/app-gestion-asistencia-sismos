@@ -1,6 +1,6 @@
-# Base del frontend para el compañero
+# Frontend de gestión de solicitudes
 
-Esta es una primera interfaz funcional de referencia. Puedes cambiar el diseño y reorganizar componentes; conserva el contrato de la API o acuerda los cambios con el responsable del backend.
+El frontend está terminado para el alcance acordado del taller. Conserva el contrato de la API si realizas ajustes posteriores y acuerda cualquier cambio de campos, estados o rutas con el responsable del backend.
 
 ## Ejecutar
 
@@ -48,8 +48,8 @@ No necesitas cuenta AWS para trabajar con los ejemplos. El frontend ya usa llama
 7. Coordinar cualquier nuevo estado o tipo de ayuda con `backend/src/validation/solicitud.js`.
 8. Mantener etiquetas accesibles, foco visible y controles utilizables con teclado.
 
-## Trabajo siguiente del frontend
+## Cierre y comprobación
 
-Revisar con el grupo la presentación, los mensajes y la comodidad del formulario; ajustar la interfaz a lo solicitado por el profesor. No es necesario agregar mapas, un dashboard de estadísticas ni más librerías para completar el taller.
+La interfaz incluye indicador del almacenamiento activo, avisos de modo de demostración, formulario en panel con foco y cierre mediante Escape, mensajes de éxito y error, y tarjetas legibles en pantallas pequeñas. No es necesario agregar mapas, un dashboard de estadísticas ni más librerías para completar el taller.
 
-Antes de integrar los cambios, ejecutar `npm run build` desde la raíz y probar registro, detalle, edición, estados, error del backend y paginación. Express publicará `frontend/dist` en Render. La validación final contra AWS y la evaluación en la URL pública siguen pendientes.
+Antes de integrar cambios posteriores, ejecutar `npm run build` desde la raíz y probar registro, detalle, edición, estados, error del backend y paginación. Express publica `frontend/dist` junto con la API; la siguiente etapa es configurarlo en Render y repetir el recorrido desde la URL pública.

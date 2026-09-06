@@ -2,7 +2,7 @@
 
 Taller de la Electiva de Bases de Datos. Una persona encargada registra solicitudes de personas afectadas por sismos y realiza seguimiento a su atención.
 
-**Estado:** base ejecutable implementada, tabla creada en AWS e integración real verificada desde Express. Publicación en Render pendiente. La interfaz es un punto de partida para el compañero de frontend.
+**Estado:** frontend y backend implementados, tabla creada en AWS e integración real verificada desde Express. Publicación en Render pendiente.
 
 **URL pública:** pendiente de desplegar.  
 **Integrantes:** completar con el grupo.
