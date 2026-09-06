@@ -43,6 +43,24 @@ Este comando selecciona **memoria explícitamente** y carga dos casos ficticios.
 
 Tabla **`SolicitudesAsistencia`**, con clave de partición **`solicitudId` de tipo String**, sin clave de ordenamiento ni índices secundarios en esta primera versión. Cada ítem representa una solicitud; una persona puede aparecer en varias solicitudes. `documento` no es único.
 
+### Decisiones de diseño en DynamoDB
+
+Se eligió **Amazon DynamoDB** porque el taller pide una base administrada de AWS y el caso maneja solicitudes independientes con atributos variables, sin relaciones ni uniones entre tablas. El modo bajo demanda evita aprovisionar capacidad para un volumen pequeño y permite concentrar el ejercicio en el modelo NoSQL y las operaciones de la aplicación.
+
+Se utiliza **una sola tabla** porque, en el alcance actual, existe una sola entidad principal: la solicitud de asistencia. Cada solicitud incluye los datos de la persona afectada, el sismo y el seguimiento de atención en el mismo ítem. Esto evita joins y es suficiente para los patrones de acceso definidos. Si el sistema necesitara, por ejemplo, un catálogo de municipios, usuarios con roles o múltiples eventos sísmicos reutilizables, se reevaluaría el diseño.
+
+La clave primaria es únicamente **`solicitudId` (String)**. El backend genera un UUID por solicitud, lo que permite recuperar y actualizar un ítem directamente sin depender de datos personales como el documento. No hay clave de ordenamiento porque la aplicación no agrupa varios ítems bajo una misma partición.
+
+| Necesidad de la aplicación | Operación y comando AWS SDK v3 | Motivo |
+| --- | --- | --- |
+| Crear una solicitud | `PutCommand` | Inserta el ítem y usa `attribute_not_exists(solicitudId)` para no sobrescribir un UUID existente. |
+| Ver una solicitud concreta | `GetCommand` | Busca directamente por `solicitudId`, la clave primaria. |
+| Editar una solicitud o su estado | `UpdateCommand` | Modifica únicamente los atributos recibidos y exige que el ítem ya exista. |
+| Listar solicitudes, con filtro opcional por estado | `ScanCommand` | No se conoce la clave primaria de antemano; se pagina el resultado y el filtro se aplica mediante `FilterExpression`. |
+| Eliminar una solicitud | No implementado | No existe endpoint ni `DeleteCommand`, para conservar el historial durante el taller. |
+
+El repositorio usa `DynamoDBDocumentClient` de `@aws-sdk/lib-dynamodb`, que permite trabajar con objetos JavaScript sin construir manualmente los tipos de atributo de DynamoDB. **No se usa `QueryCommand`** en la versión actual: `Query` requiere conocer una clave de partición o disponer de un índice. Como la tabla solo tiene `solicitudId` y el listado debe recorrer todas las solicitudes, `ScanCommand` es la decisión correcta para este volumen académico. Para un sistema con muchas solicitudes se podría añadir un GSI, por ejemplo con `estado` como partición y `fechaSolicitud` como ordenamiento, y entonces consultar con `QueryCommand`.
+
 | Atributo | Tipo almacenado | Regla de la aplicación |
 | --- | --- | --- |
 | `solicitudId` | String | UUID generado por el backend; clave primaria. |
