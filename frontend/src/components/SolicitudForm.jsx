@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ayudas, ayudasConfig, estados, estadosConfig, fechaHora } from '../catalogos.js';
+import { ayudas, estados, estadosConfig, fechaHora } from '../catalogos.js';
 
 const empty = {
   nombre: '',
@@ -149,7 +149,7 @@ export default function SolicitudForm({ initial, onSave, onClose, onStateChange 
                   onClick={() => handleQuickState('EN_ATENCION')}
                   title="Marcar que un equipo de rescate o ayuda va en camino"
                 >
-                  🚚 Desplegar Equipo (Pasar a En Atención)
+                  Desplegar Equipo (Pasar a En Atención)
                 </button>
               )}
               {initial.estado === 'EN_ATENCION' && (
@@ -160,7 +160,7 @@ export default function SolicitudForm({ initial, onSave, onClose, onStateChange 
                   onClick={() => handleQuickState('ATENDIDA')}
                   title="Confirmar que la ayuda fue entregada satisfactoriamente"
                 >
-                  ✅ Completar Entrega (Marcar Atendida)
+                  Completar Entrega (Marcar Atendida)
                 </button>
               )}
               {initial.estado === 'ATENDIDA' && (
@@ -171,7 +171,7 @@ export default function SolicitudForm({ initial, onSave, onClose, onStateChange 
                   onClick={() => handleQuickState('EN_ATENCION')}
                   title="Reabrir el caso si se requiere seguimiento adicional"
                 >
-                  🔄 Reabrir a En Atención
+                  Reabrir a En Atención
                 </button>
               )}
             </div>
@@ -187,7 +187,6 @@ export default function SolicitudForm({ initial, onSave, onClose, onStateChange 
               onClick={() => setShowDbInfo((prev) => !prev)}
               aria-expanded={showDbInfo}
             >
-              <span className="dynamo-logo" aria-hidden="true">⚡</span>
               <span>Metadatos del Registro en DynamoDB (Partition Key & Auditoría)</span>
               <span className="drawer-arrow">{showDbInfo ? '▲ Ocultar' : '▼ Ver'}</span>
             </button>
@@ -226,7 +225,7 @@ export default function SolicitudForm({ initial, onSave, onClose, onStateChange 
 
         <form onSubmit={submit}>
           <fieldset disabled={busy}>
-            <legend>👤 Persona Afectada</legend>
+            <legend>Persona Afectada</legend>
             <div className="fields">
               <label htmlFor="nombre">
                 Nombre completo *
@@ -266,7 +265,7 @@ export default function SolicitudForm({ initial, onSave, onClose, onStateChange 
           </fieldset>
 
           <fieldset disabled={busy}>
-            <legend>📍 Zona y Características del Sismo</legend>
+            <legend>Zona y Características del Sismo</legend>
             <div className="fields">
               <label htmlFor="municipio">
                 Municipio / Ciudad *
@@ -315,19 +314,14 @@ export default function SolicitudForm({ initial, onSave, onClose, onStateChange 
           </fieldset>
 
           <fieldset disabled={busy}>
-            <legend>🆘 Asistencia Humanitaria Requerida</legend>
+            <legend>Asistencia Humanitaria Requerida</legend>
             <div className="fields">
               <label htmlFor="tipoAyuda">
                 Tipo de ayuda prioritaria *
                 <select {...field('tipoAyuda')}>
-                  {Object.entries(ayudas).map(([value, label]) => {
-                    const cfg = ayudasConfig[value];
-                    return (
-                      <option key={value} value={value}>
-                        {cfg?.icon ? `${cfg.icon} ` : ''}{label}
-                      </option>
-                    );
-                  })}
+                  {Object.entries(ayudas).map(([value, label]) => (
+                    <option key={value} value={value}>{label}</option>
+                  ))}
                 </select>
               </label>
               <label className="wide" htmlFor="observaciones">

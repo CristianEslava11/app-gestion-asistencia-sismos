@@ -3,6 +3,7 @@ import { api } from './services/solicitudes.js';
 import { ayudas, estados } from './catalogos.js';
 import SolicitudForm from './components/SolicitudForm.jsx';
 import SolicitudesTable from './components/SolicitudesTable.jsx';
+import MetricIcon from './components/MetricIcon.jsx';
 
 function SeismicMark() {
   return (
@@ -234,7 +235,7 @@ export default function App() {
           >
             <div className="kpi-header">
               <span className="kpi-title">Total Solicitudes</span>
-              <span className="kpi-icon">📋</span>
+              <span className="kpi-icon"><MetricIcon name="requests" /></span>
             </div>
             <span className="kpi-value">{kpis.total}</span>
             <span className="kpi-sub">Cargadas en la sesión</span>
@@ -264,7 +265,7 @@ export default function App() {
           >
             <div className="kpi-header">
               <span className="kpi-title">En Atención</span>
-              <span className="kpi-icon">🚚</span>
+              <span className="kpi-icon"><MetricIcon name="attention" /></span>
             </div>
             <span className="kpi-value">{kpis.enAtencion}</span>
             <span className="kpi-sub">Equipos en terreno</span>
@@ -279,7 +280,7 @@ export default function App() {
           >
             <div className="kpi-header">
               <span className="kpi-title">Atendidas</span>
-              <span className="kpi-icon">✅</span>
+              <span className="kpi-icon"><MetricIcon name="complete" /></span>
             </div>
             <span className="kpi-value">{kpis.atendidas}</span>
             <span className="kpi-sub">Ayuda entregada</span>
@@ -289,12 +290,12 @@ export default function App() {
         {/* Notificaciones y alertas */}
         {mode === 'memory' && (
           <p className="notice warning">
-            ⚠️ <strong>Modo de Demostración Local:</strong> Los registros se guardan en memoria temporal y se reiniciarán con el backend. Para persistencia permanente, asegúrate de correr conectado a AWS DynamoDB.
+            <strong>Modo de Demostración Local:</strong> Los registros se guardan en memoria temporal y se reiniciarán con el backend. Para persistencia permanente, asegúrate de correr conectado a AWS DynamoDB.
           </p>
         )}
         {notice && (
           <p className="notice success" role="status">
-            <span>✓ {notice}</span>
+            <span>{notice}</span>
             <button className="notice-close" aria-label="Cerrar aviso" onClick={() => setNotice('')}>
               ×
             </button>
@@ -302,7 +303,7 @@ export default function App() {
         )}
         {error && (
           <p className="notice error" role="alert">
-            <span>✕ {error}</span>
+            <span>{error}</span>
             <button className="text-button" onClick={refresh}>
               Reintentar
             </button>
@@ -412,7 +413,7 @@ export default function App() {
           {/* Estados vacíos */}
           {!loading && !error && filteredItems.length === 0 && (
             <div className="empty">
-              <div className="empty-icon" aria-hidden="true">🔎</div>
+              <div className="empty-icon" aria-hidden="true"><SearchIcon /></div>
               <h3>
                 {searchTerm || selectedAyuda
                   ? 'Sin coincidencias para los filtros aplicados'

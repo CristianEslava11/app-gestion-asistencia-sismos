@@ -16,11 +16,11 @@ export const ayudas = {
 };
 
 export const ayudasConfig = {
-  ALIMENTACION: { label: 'Alimentación', icon: '🍲', badgeClass: 'ayuda-alimentacion' },
-  ALOJAMIENTO: { label: 'Alojamiento', icon: '⛺', badgeClass: 'ayuda-alojamiento' },
-  ATENCION_MEDICA: { label: 'Atención médica', icon: '🩺', badgeClass: 'ayuda-medica', urgent: true },
-  RESCATE: { label: 'Rescate', icon: '🚨', badgeClass: 'ayuda-rescate', urgent: true },
-  OTRA: { label: 'Otra', icon: '📦', badgeClass: 'ayuda-otra' },
+  ALIMENTACION: { label: 'Alimentación', badgeClass: 'ayuda-alimentacion' },
+  ALOJAMIENTO: { label: 'Alojamiento', badgeClass: 'ayuda-alojamiento' },
+  ATENCION_MEDICA: { label: 'Atención médica', badgeClass: 'ayuda-medica', urgent: true },
+  RESCATE: { label: 'Rescate', badgeClass: 'ayuda-rescate', urgent: true },
+  OTRA: { label: 'Otra', badgeClass: 'ayuda-otra' },
 };
 
 export const fechaHora = (value) => {

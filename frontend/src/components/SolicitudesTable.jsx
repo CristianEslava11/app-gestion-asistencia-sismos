@@ -17,7 +17,7 @@ export default function SolicitudesTable({ items, busy, onOpen, onState }) {
         </thead>
         <tbody>
           {items.map((item) => {
-            const ayudaCfg = ayudasConfig[item.tipoAyuda] || { icon: '📦', badgeClass: 'ayuda-otra' };
+            const ayudaCfg = ayudasConfig[item.tipoAyuda] || { badgeClass: 'ayuda-otra' };
             const tieneMagnitud = typeof item.magnitud === 'number';
             return (
               <tr key={item.solicitudId} className={`row-state-${item.estado.toLowerCase()}`}>
@@ -32,14 +32,14 @@ export default function SolicitudesTable({ items, busy, onOpen, onState }) {
                         title={`Llamar a ${item.nombre}: ${item.telefono}`}
                         onClick={(e) => e.stopPropagation()}
                       >
-                        <span aria-hidden="true">📞</span> {item.telefono}
+                        {item.telefono}
                       </a>
                     )}
                   </div>
                 </td>
                 <td data-label="Zona y Sismo">
                   <div className="zone-info">
-                    <strong className="municipio-text">📍 {item.municipio}</strong>
+                    <strong className="municipio-text">{item.municipio}</strong>
                     <span className="address-text" title={item.direccion}>{item.direccion}</span>
                     <div className="seismic-tags">
                       {tieneMagnitud ? (
@@ -47,7 +47,7 @@ export default function SolicitudesTable({ items, busy, onOpen, onState }) {
                           className={`seismic-badge ${item.magnitud >= 6.0 ? 'high-mag' : item.magnitud >= 4.5 ? 'mid-mag' : 'low-mag'}`}
                           title={`Magnitud sismo: ${item.magnitud}`}
                         >
-                          〰 {item.magnitud} M
+                          {item.magnitud} M
                         </span>
                       ) : null}
                       <span className="sismo-date" title="Fecha del sismo">{item.fechaSismo}</span>
@@ -59,7 +59,6 @@ export default function SolicitudesTable({ items, busy, onOpen, onState }) {
                 </td>
                 <td data-label="Ayuda Requerida">
                   <span className={`ayuda-chip ${ayudaCfg.badgeClass}`}>
-                    <span className="ayuda-icon" aria-hidden="true">{ayudaCfg.icon}</span>
                     <span className="ayuda-name">{ayudas[item.tipoAyuda]}</span>
                   </span>
                 </td>
