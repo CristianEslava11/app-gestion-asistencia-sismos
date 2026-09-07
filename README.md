@@ -8,15 +8,10 @@ Aplicación para registrar solicitudes de personas afectadas por sismos y realiz
 
 **URL pública:** [https://asistencia-sismos.onrender.com/](https://asistencia-sismos.onrender.com/)
 
-**Acceso para la revisión:** 
-```powershell
-usuario: 
-contraseña: 
-```
 **Integrantes:** Cristian Eslava, Alisson Páez, David Sanchez, Karolain Giraldo, Angel Castro.
 
-## Documento para entender la estrcutura proyecto
-- [API](docs/API.md).
+**Documento para entender la estrcutura proyecto:** [API](docs/API.md).
+---
 
 ## Arquitectura
 El usuario puede acceder a la aplicación desde el navegador, ya que está publicada en Render, donde funcionan tanto el backend como el frontend. El backend se conecta a DynamoDB para guardar y consultar las solicitudes.
@@ -24,8 +19,7 @@ El usuario puede acceder a la aplicación desde el navegador, ya que está publi
 - El frontend fue desarrollado con React, Vite, JavaScript y CSS. 
 - El backend fue desarrollado con Node.js y Express, utiliza Zod para validar los datos y el SDK v3 de AWS para conectarse con DynamoDB.
 - El backend genera automáticamente el identificador único (UUID) y las fechas de seguimiento de cada solicitud.
-- Las credenciales de AWS están protegidas por lo que el navegador nunca las recibe.
-
+---
 
 ## DynamoDB: Explicación del modelo y las decisiones tomadas
 Se creó una tabla llamada `SolicitudesAsistencia`, con clave de partición `solicitudId` de tipo `String`. Esta clave es un campo que usa DynamoDB para identificar cada solicitud.
@@ -46,9 +40,9 @@ Cada solicitud tiene un identificador unico llamado `solicitudId`, que se genera
 | Registrar una solicitud | `PutCommand` | Inserta el registro usando `attribute_not_exists(solicitudId)` para no sobrescribir un UUID que ya existe. |
 | Consultar una solicitud | `GetCommand` | Busca la solicitud por medio de su `solicitudId`. |
 | Editar una solicitud o cambiar su estado | `UpdateCommand` | Actualiza solo los atributos recibidos de una solicitud existente.|
-| Listar solicitudes | `ScanCommand` | Obtiene las solicitudes y se permite aplicar filtros mediante `FilterExpression`. |
+| Listar solicitudes | `ScanCommand` | Obtiene las solicitudes y les aplica filtros mediante `FilterExpression`. |
 
-El backend usa `DynamoDBDocumentClient` de `@aws-sdk/lib-dynamodb` para comunicarse con DymanoDB por medio de objetos de JavaScript. Para listar las solicitudes se usa `Scan`, ya que la aplicación necesita revisar varios registros y no conoce la `solicitudId` de cada uno. Esta solución es la más adecuada. 
+El backend usa `DynamoDBDocumentClient` de `@aws-sdk/lib-dynamodb` para comunicarse con DynamoDB por medio de objetos de JavaScript. Para listar las solicitudes se usa `Scan`, ya que la aplicación necesita revisar varios registros y no conoce la `solicitudId` de cada uno. Esta solución es la más adecuada. 
 
 ### Atributos almacenados
 
@@ -73,6 +67,8 @@ El backend usa `DynamoDBDocumentClient` de `@aws-sdk/lib-dynamodb` para comunica
 ## Preguntas comparativas
 
 ### 1. ¿Cómo se definen las reglas en DynamoDB?
+En DynamoDB lo que se define como base es la clave primaria de la tabla y si se necesitan, también los índices secundarios para consultas más específicas. No se obliga a crear columnas fijas desde el inicio como lo hacen las bases de datos relacionales. En vez de eso se usa el modelo por item:
+
 Un item en DynamoDB es un objeto JSON que contiene una clave principal y sus atributos, por ejemplo:
 
 ```powershell
@@ -83,7 +79,7 @@ Un item en DynamoDB es un objeto JSON que contiene una clave principal y sus atr
   "estado": "PENDIENTE"
 }
 ```
-Cada item puede almacenar atributos diferentes según su caso, no es obligatorio que todos los items tengan los mismos campos. Esto es muy útil para atributos opcionales. Por eso, que la validación de los tipos de datos, los campos obligatorios y los formatos y reglas de negocio se hacen normalmente en la aplicación. DynamoDB también permite usar condiciones en las operaciones para evitar sobreescribir o modificar los datos de forma incorrecta. 
+Cada item puede almacenar atributos diferentes según su caso, no es obligatorio que todos los items tengan los mismos campos. Esto es muy útil para atributos opcionales. Por eso, la validación de los tipos de datos, los campos obligatorios y los formatos y reglas de negocio se hacen normalmente en la aplicación. DynamoDB también permite usar condiciones en las operaciones para evitar sobreescribir o modificar los datos de forma incorrecta. 
 
 ### Demostración de esto en la aplicación
 Al crear la tabla, solo se define `solicitudId` como clave principal. Los demás atributos no se crean como columnas fijas desde el inicio, sino que se agregan como atributos a cada ítem cuando se guarda una solicitud, esto permite que hayan registros con atributos opcionales. 
@@ -151,4 +147,7 @@ Con la tabla creada y el archivo configurado se inicia la aplicación con:
 npm run dev
 ```
 `STORAGE_MODE=dynamodb` es el valor predeterminado. Si AWS falla, la API responde con un error.
+---
 
+## Conclusión
+Este proyecto demuestra cómo DynamoDB puede hacer más fácil la gestión de información cambiante y escalable en una aplicación como la de asistencia a sismos, permitiendo almacenar cada solicitud como un item independiente y flexible, mientras la validación y las reglas de negocio se mantienen en la aplicación.
