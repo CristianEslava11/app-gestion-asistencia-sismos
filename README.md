@@ -1,225 +1,154 @@
-# Gestión de solicitudes de asistencia por sismos
+# Gestión de solicitudes de asistencia por sismos usando DynamoDB
 
-Taller de la Electiva de Bases de Datos. Una persona encargada registra solicitudes de personas afectadas por sismos y realiza seguimiento a su atención.
+## Taller de Electiva de Bases de Datos Modernas. 
 
-**Estado:** frontend y backend implementados, tabla creada en AWS, integración real verificada y aplicación publicada en Render.
+Aplicación para registrar solicitudes de personas afectadas por sismos y realizar seguimiento a su atención.
+
+**Estado:** La aplicación cuenta con frontend y backend implementados, utiliza la tabla `SolicitudesAsistencia` creada en AWS DynamoDB, y fue publicada en Render.
 
 **URL pública:** [https://asistencia-sismos.onrender.com/](https://asistencia-sismos.onrender.com/)
 
-**Acceso de evaluación:** solicitar al grupo las credenciales de demostración. No se publican en este repositorio.
-**Integrantes:** completar con el grupo.
+**Acceso para la revisión:** 
+```powershell
+usuario: 
+contraseña: 
+```
+**Integrantes:** Cristian Eslava, Alisson Páez, David Sanchez, Karolain Giraldo, Angel Castro.
 
-## Guías del proyecto
-
-- [Decisiones y responsabilidades](docs/DECISIONES.md).
-- [Contrato de la API](docs/API.md).
-- [Guía para continuar el frontend](frontend/README.md).
-- [Entrega completa para el compañero de frontend](docs/GUIA_COMPANERO_FRONTEND.md).
+## Documento para entender la estrcutura proyecto
+- [API](docs/API.md).
 
 ## Arquitectura
+El usuario puede acceder a la aplicación desde el navegador, ya que está publicada en Render, donde funcionan tanto el backend como el frontend. El backend se conecta a DynamoDB para guardar y consultar las solicitudes.
 
-```text
-Navegador → Render: Express + frontend compilado → DynamoDB en AWS
-```
+- El frontend fue desarrollado con React, Vite, JavaScript y CSS. 
+- El backend fue desarrollado con Node.js y Express, utiliza Zod para validar los datos y el SDK v3 de AWS para conectarse con DynamoDB.
+- El backend genera automáticamente el identificador único (UUID) y las fechas de seguimiento de cada solicitud.
+- Las credenciales de AWS están protegidas por lo que el navegador nunca las recibe.
 
-Frontend: React + Vite, JavaScript y CSS. Backend: Node.js + Express 5, validación con Zod y AWS SDK v3. Un repositorio con npm workspaces, un solo archivo de dependencias bloqueadas y un solo servicio en Render.
 
-El backend genera el UUID y las fechas de seguimiento. El navegador nunca recibe credenciales de AWS. No hay DynamoDB Local ni otra base de datos que sustituya el requisito de AWS.
+## DynamoDB: Explicación del modelo y las decisiones tomadas
+Se creó una tabla llamada `SolicitudesAsistencia`, con clave de partición `solicitudId` de tipo `String`. Esta clave es un campo que usa DynamoDB para identificar cada solicitud.
 
-## Iniciar la base sin configurar AWS
+ La tabla almacena datos como nombre, documento, teléfono, municipio, dirección, tipo de ayuda, magnitud del sismo, estado y fechas de seguimiento. Cada registro de la tabla representa una solicitud de asistencia. Una misma persona puede aparecer en varias solicitudes, por lo que el documento no es único.
 
-Requisitos: Node.js 22.12 o superior dentro de las versiones 22–24, npm y acceso a Internet para instalar dependencias. Los comandos se ejecutan desde la raíz del repositorio.
 
-```powershell
-npm ci
-npm run dev:demo
-```
+### Decisiones de construcción 
+Se utiliza una sola tabla porque en el contexto existe una sola entidad principal: solicitud de asistencia. Cada solicitud contiene la información de la persona afectada, los datos del sismo y su estado de atención. De esta forma, todo queda organizado en un mismo ítem o registro. 
 
-Abrir [http://localhost:5173](http://localhost:5173). Vite ejecuta el frontend y dirige `/api` al backend del puerto 3000.
+Cada solicitud tiene un identificador unico llamado `solicitudId`, que se genera automáticamente por el backend por medio de un UUID. Este identificador permite consultar y actualizar una solicitud sin depender del nombre o del documento de la persona. Además, no se usa clave de ordenamiento porque cada solicitud es independiente y no se agrupan varios registros con una misma clave. 
 
-Este comando selecciona **memoria explícitamente** y carga dos casos ficticios. Los cambios sobreviven a recargar el navegador, pero se pierden al reiniciar el backend. La pantalla muestra un aviso. Es una ayuda de desarrollo, no la demostración de persistencia requerida por el taller.
 
-## DynamoDB: modelo y justificación
+### Operaciones principales
 
-Tabla **`SolicitudesAsistencia`**, con clave de partición **`solicitudId` de tipo String**, sin clave de ordenamiento ni índices secundarios en esta primera versión. Cada ítem representa una solicitud; una persona puede aparecer en varias solicitudes. `documento` no es único.
-
-### Decisiones de diseño en DynamoDB
-
-Se eligió **Amazon DynamoDB** porque el taller pide una base administrada de AWS y el caso maneja solicitudes independientes con atributos variables, sin relaciones ni uniones entre tablas. El modo bajo demanda evita aprovisionar capacidad para un volumen pequeño y permite concentrar el ejercicio en el modelo NoSQL y las operaciones de la aplicación.
-
-Se utiliza **una sola tabla** porque, en el alcance actual, existe una sola entidad principal: la solicitud de asistencia. Cada solicitud incluye los datos de la persona afectada, el sismo y el seguimiento de atención en el mismo ítem. Esto evita joins y es suficiente para los patrones de acceso definidos. Si el sistema necesitara, por ejemplo, un catálogo de municipios, usuarios con roles o múltiples eventos sísmicos reutilizables, se reevaluaría el diseño.
-
-La clave primaria es únicamente **`solicitudId` (String)**. El backend genera un UUID por solicitud, lo que permite recuperar y actualizar un ítem directamente sin depender de datos personales como el documento. No hay clave de ordenamiento porque la aplicación no agrupa varios ítems bajo una misma partición.
-
-| Necesidad de la aplicación | Operación y comando AWS SDK v3 | Motivo |
+| Acción en la aplicación| Operación DynamoDB | Función |
 | --- | --- | --- |
-| Crear una solicitud | `PutCommand` | Inserta el ítem y usa `attribute_not_exists(solicitudId)` para no sobrescribir un UUID existente. |
-| Ver una solicitud concreta | `GetCommand` | Busca directamente por `solicitudId`, la clave primaria. |
-| Editar una solicitud o su estado | `UpdateCommand` | Modifica únicamente los atributos recibidos y exige que el ítem ya exista. |
-| Listar solicitudes, con filtro opcional por estado | `ScanCommand` | No se conoce la clave primaria de antemano; se pagina el resultado y el filtro se aplica mediante `FilterExpression`. |
-| Eliminar una solicitud | No implementado | No existe endpoint ni `DeleteCommand`, para conservar el historial durante el taller. |
+| Registrar una solicitud | `PutCommand` | Inserta el registro usando `attribute_not_exists(solicitudId)` para no sobrescribir un UUID que ya existe. |
+| Consultar una solicitud | `GetCommand` | Busca la solicitud por medio de su `solicitudId`. |
+| Editar una solicitud o cambiar su estado | `UpdateCommand` | Actualiza solo los atributos recibidos de una solicitud existente.|
+| Listar solicitudes | `ScanCommand` | Obtiene las solicitudes y se permite aplicar filtros mediante `FilterExpression`. |
 
-El repositorio usa `DynamoDBDocumentClient` de `@aws-sdk/lib-dynamodb`, que permite trabajar con objetos JavaScript sin construir manualmente los tipos de atributo de DynamoDB. **No se usa `QueryCommand`** en la versión actual: `Query` requiere conocer una clave de partición o disponer de un índice. Como la tabla solo tiene `solicitudId` y el listado debe recorrer todas las solicitudes, `ScanCommand` es la decisión correcta para este volumen académico. Para un sistema con muchas solicitudes se podría añadir un GSI, por ejemplo con `estado` como partición y `fechaSolicitud` como ordenamiento, y entonces consultar con `QueryCommand`.
+El backend usa `DynamoDBDocumentClient` de `@aws-sdk/lib-dynamodb` para comunicarse con DymanoDB por medio de objetos de JavaScript. Para listar las solicitudes se usa `Scan`, ya que la aplicación necesita revisar varios registros y no conoce la `solicitudId` de cada uno. Esta solución es la más adecuada. 
 
-| Atributo | Tipo almacenado | Regla de la aplicación |
+### Atributos almacenados
+
+| Atributo | Tipo de dato | Descripción |
 | --- | --- | --- |
-| `solicitudId` | String | UUID generado por el backend; clave primaria. |
+| `solicitudId` | String | UUID generado por el backend y clave primaria. |
 | `nombre` | String | Obligatorio, 2–120 caracteres. |
-| `documento` | String | Obligatorio, 3–30 caracteres; conserva ceros iniciales y letras. |
-| `telefono` | String | Obligatorio, 7–25 caracteres; admite dígitos, espacios, `+`, paréntesis y guiones. |
+| `documento` | String | Obligatorio, 3–30 caracteres. No elimina ni modifica ceros iniciales y letras. |
+| `telefono` | String | Obligatorio, 7–25 caracteres. Admite dígitos, espacios, `+`, paréntesis y guiones. |
 | `municipio` | String | Obligatorio, 2–100 caracteres. |
 | `direccion` | String | Obligatoria, 3–200 caracteres. |
-| `fechaSismo` | String | Fecha real `YYYY-MM-DD`, no futura según el día de Colombia. |
-| `fechaSolicitud` | String | Instante ISO 8601 en UTC; generado al crear, inmutable. |
-| `magnitud` | Number o Null | Opcional. Rango de entrada del taller: 0–10; desconocida se guarda como `null`, no como 0. |
+| `fechaSismo` | String | Fecha real `YYYY-MM-DD`. |
+| `fechaSolicitud` | String | Generado al crear, no cambia. |
+| `magnitud` | Number o Null | Opcional, 0–10. Si se desconoce se guarda como `null`, no como 0. |
 | `tipoAyuda` | String | `ALIMENTACION`, `ALOJAMIENTO`, `ATENCION_MEDICA`, `RESCATE` u `OTRA`. |
-| `estado` | String | `PENDIENTE`, `EN_ATENCION` o `ATENDIDA`; inicialmente `PENDIENTE`. |
-| `observaciones` | String | Opcional, máximo 1500 caracteres; por defecto cadena vacía. |
-| `fechaActualizacion` | String | Instante ISO 8601 en UTC; se actualiza al editar o cambiar estado. |
+| `estado` | String | `PENDIENTE`, `EN_ATENCION` o `ATENDIDA`. Inicialmente queda en `PENDIENTE`. |
+| `observaciones` | String | Opcional, máximo 1500 caracteres. Por defecto es una cadena vacía. |
+| `fechaActualizacion` | String | Se actualiza al editar o cambiar estado. |
 
-Al crear la tabla **solo se declara `solicitudId`** en las definiciones de atributos. Los demás atributos se escriben con cada ítem; no se crean columnas previamente. La validación de estos campos corresponde a Express/Zod. [Operaciones básicas de tablas en AWS](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/WorkingWithTables.Basics.html).
+---
 
-### Patrones de acceso
+## Preguntas comparativas
 
-| Operación | Operación DynamoDB | Decisión |
-| --- | --- | --- |
-| Registrar | `PutItem` | Condición `attribute_not_exists(solicitudId)` para evitar sobrescritura accidental. |
-| Consultar por ID | `GetItem` | Acceso directo por clave primaria, lectura consistente. |
-| Editar o cambiar estado | `UpdateItem` | Condición `attribute_exists(solicitudId)`; no crea registros al editar un ID inexistente. |
-| Listar | `Scan` paginado | Adecuado para el volumen pequeño del taller, sin prometer orden cronológico. |
-| Filtrar por estado | `Scan` con `FilterExpression` | El filtro se aplica después de leer; no reduce las lecturas facturadas. |
-
-`limit` limita los ítems **evaluados**, no las coincidencias. Una página filtrada puede estar vacía y todavía incluir `nextCursor`. El frontend mantiene el botón “Cargar más” en ese caso. El listado no es una instantánea transaccional: cambios concurrentes pueden afectar las páginas. [Paginación y filtros de Scan](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Scan.html).
-
-No se agrega un índice por anticipado. Si creciera el volumen o se necesitara consultar frecuentemente por estado y fecha, se evaluaría un GSI con partición `estado` y ordenamiento `fechaSolicitud` para usar `Query`. Eso es una mejora futura, no una capacidad implementada.
-
-La configuración inicial usa **capacidad bajo demanda (`PAY_PER_REQUEST`)**. AWS puede cobrar por solicitudes y almacenamiento; revisar los créditos y condiciones de la cuenta. [Capacidad bajo demanda](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/on-demand-capacity-mode.html).
-
-## Crear la tabla real en AWS
-
-La tabla del taller ya está creada y activa en **Ohio (`us-east-2`)**, según la consola compartida por el responsable. El backend y Render usan esa región por defecto. Los pasos siguientes permiten reproducir la creación en otra cuenta; no hace falta crear de nuevo la tabla existente.
-
-### Opción A: consola de AWS
-
-1. Entrar a DynamoDB en la región elegida y seleccionar **Crear tabla**.
-2. Nombre: `SolicitudesAsistencia`.
-3. Clave de partición: `solicitudId`, tipo **String**. Dejar vacía la clave de ordenamiento.
-4. Verificar que el modo de capacidad sea **bajo demanda**. No agregar índices para esta versión.
-5. Crear y esperar a que la tabla esté **Activa**.
-
-### Opción B: script del repositorio
-
-Primero configurar un perfil de AWS con credenciales fuera del repositorio y permisos de `CreateTable` y `DescribeTable` para esta tarea. La política de ejecución de Render, descrita abajo, no incluye permisos de creación.
-
-Copiar la configuración de ejemplo:
+### 1. ¿Cómo se definen las reglas en DynamoDB?
+Un item en DynamoDB es un objeto JSON que contiene una clave principal y sus atributos, por ejemplo:
 
 ```powershell
-Copy-Item backend/.env.example backend/.env
+{
+  "solicitudId": "1",
+  "nombre": "María",
+  "direccion": "Barrio San Antonio",
+  "estado": "PENDIENTE"
+}
 ```
+Cada item puede almacenar atributos diferentes según su caso, no es obligatorio que todos los items tengan los mismos campos. Esto es muy útil para atributos opcionales. Por eso, que la validación de los tipos de datos, los campos obligatorios y los formatos y reglas de negocio se hacen normalmente en la aplicación. DynamoDB también permite usar condiciones en las operaciones para evitar sobreescribir o modificar los datos de forma incorrecta. 
 
-Editar `backend/.env`: región, nombre de tabla y, si se necesita, `AWS_PROFILE`. Usar un perfil configurado mediante AWS CLI o variables de credenciales del entorno. No pegar credenciales en archivos versionados.
+### Demostración de esto en la aplicación
+Al crear la tabla, solo se define `solicitudId` como clave principal. Los demás atributos no se crean como columnas fijas desde el inicio, sino que se agregan como atributos a cada ítem cuando se guarda una solicitud, esto permite que hayan registros con atributos opcionales. 
 
-```powershell
-npm run db:create
-```
+El backend valida que la información cumpla las reglas antes de guardarla. 
 
-Este comando usa [la definición de la tabla](infra/dynamodb-table.json), espera a que esté activa y no cambia una tabla existente. Si ya existe, verifica la clave. Se necesitan credenciales válidas y acceso a AWS; no es un emulador.
 
-### Acceso de la aplicación y ejemplos
+### 2. ¿Cómo es la seguridad en DynamoDB?
 
-Usar [la política IAM de ejecución](infra/iam-runtime-policy.json), preparada con el ARN de la tabla del taller. Para reproducir el proyecto en otra cuenta o región, sustituir el ARN por el de la nueva tabla. Permite `GetItem`, `PutItem`, `UpdateItem` y `Scan` sobre una sola tabla. No usar claves del usuario raíz ni permisos de administrador para Render.
+La seguridad en DynamoDB se administra principalmente mediante AWS IAM, que define qué usuarios o servicios pueden acceder a las tablas y qué operaciones pueden realizar. También se pueden proteger los datos por medio de cifrado, utilizando conexiones seguras y aplicando políticas de control de acceso.
 
-Para cargar ejemplos, con `PutItem` autorizado:
 
-```powershell
-npm run db:seed
-```
+### 3. Ventajas y Desventajas con Firebase teniendo en cuenta el ejercicio
 
-Los ejemplos tienen IDs fijos; ejecutar el script varias veces no sobrescribe los registros existentes, aunque se hayan editado.
+**Ventajas**
+- Se integra con los servicios de AWS.
+- Permite controlar los permisos por medio de IAM.
+- Es flexible para almacenar datos con diferentes atributos.
+- Puede ser más rentable para proyectos con crecimiento. 
 
-La integración se verificó el 5 de septiembre de 2026 con el perfil local `asistencia-sismos`: se cargaron dos registros ficticios, Express los leyó desde DynamoDB y se comprobó una actualización de estado mediante la API. El registro utilizado se restauró a `PENDIENTE` al finalizar.
+**Desventajas**
+- Requiere más conocimientos de AWS y configuración inicial.
+- Las consultas deben planearse según las claves e índices.
+- Puede ser más complejo para proyectos pequeños.
+- No ofrece de forma predeterminada la misma sincronización en tiempo real que Firebase.
 
-## Ejecutar con DynamoDB real
+En conclusión, DynamoDB es una mejor opción para proyectos que tengan mayor crecimiento, mayor volumen de datos o más complejidad técnica, mientras que Firebase es más práctico para proyectos pequeños o con requisitos más sencillos. 
 
-Con la tabla creada y `backend/.env` configurado:
+---
+## Uso de la aplicación 
+La aplicación permite registrar solicitudes de asistencia por sismos y llevar un seguimiento en cada caso.
+
+### Funcionalidades principales
+- Registrar una nueva solicitud con datos como nombre, documento, municipio, dirección, tipo de ayuda, fecha del sismo y magnitud.
+- Consultar las solicitudes existentes.
+- Ver el detalle de una solicitud registrada.
+- Actualizar observaciones y cambiar el estado de atención.
+- Filtrar o buscar solicitudes por cierta información
+
+### Forma de usarla
+- Completar el formulario con los datos de la persona afectada.
+- Guardar la solicitud.
+- Revisar la lista de casos registrados.
+- Seleccionar una solicitud para consultar o editar su información.
+- Cambiar el estado según el avance del caso.
+
+
+---
+## Guía opcional de replicación del entorno con AWS DynamoDB
+
+Esta sección es opcional y solo aplica si se desea replicar el proceso en otra cuenta de AWS.
+
+### Creación de la tabla en AWS
+
+La tabla del proyecto está creada y activa en Ohio (`us-east-2`) y es la misma que usa el backend y Render para conectarse a la base de datos. Para reproducirla en otra cuenta de AWS solo se debe crear una tabla llamada `SolicitudesAsistencia` con la clave principal `solicitudId` de tipo String, sin clave de ordenamiento.  
+
+
+### Ejecución con DynamoDB
+
+Primero se edita el archivo `backend/.env` con la región, el nombre de la tabla y las credenciales necesarias para la conexión.
+
+Con la tabla creada y el archivo configurado se inicia la aplicación con:
 
 ```powershell
 npm run dev
 ```
+`STORAGE_MODE=dynamodb` es el valor predeterminado. Si AWS falla, la API responde con un error.
 
-`STORAGE_MODE=dynamodb` es el valor predeterminado. Si falla AWS, la API responde un error: **nunca cambia automáticamente a memoria**. El modo de memoria se rechaza cuando `NODE_ENV=production`.
-
-| Variable | Uso |
-| --- | --- |
-| `PORT` | Puerto de Express; 3000 por defecto. Render lo proporciona. |
-| `NODE_ENV` | `development`, `test` o `production`. |
-| `STORAGE_MODE` | `dynamodb` por defecto; `memory` solo para desarrollo explícito. |
-| `AWS_REGION` | Región de la tabla. |
-| `DYNAMODB_TABLE` | Nombre de la tabla. |
-| `AWS_PROFILE` | Perfil local opcional; no configurarlo en Render. |
-| `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | Credenciales del servidor cuando no se usa perfil u otro proveedor del SDK. |
-| `AWS_SESSION_TOKEN` | Necesario si las credenciales son temporales; renovar al vencer. |
-| `DEMO_USER`, `DEMO_PASSWORD` | Acceso HTTP Basic de evaluación; contraseña de al menos 12 caracteres. Obligatorios juntos en producción, opcionales en local. |
-
-El acceso de evaluación es un usuario compartido que solicita el propio navegador. No es un sistema de cuentas ni roles. Su propósito es limitar el acceso a la demostración; se comparte por un canal privado y se usa sobre el HTTPS de Render. No debe incluirse en el código, en el README público ni en la URL. Si se activa en desarrollo, abrir primero `/api/config` en el origen del frontend para que el navegador solicite las credenciales.
-
-## Compilar y servir front y back juntos
-
-```powershell
-npm run build
-npm start
-```
-
-Abrir [http://localhost:3000](http://localhost:3000). Express entrega `frontend/dist` y la API bajo `/api` desde un solo origen. `npm start` usa la configuración de `backend/.env`; para probar este empaquetado en memoria local, establecer `STORAGE_MODE=memory` y mantener `NODE_ENV=development`.
-
-## Desplegar en Render
-
-Primero verificar la app con DynamoDB real. Tener la tabla y el acceso IAM listos; **Render no crea DynamoDB**.
-
-1. Subir el repositorio a GitHub, incluyendo `package-lock.json`, excluyendo `.env` y `node_modules`.
-2. En Render, crear un **Blueprint** y conectar el repositorio. Render leerá [render.yaml](render.yaml).
-3. Revisar el plan gratuito, nombre del servicio, región de AWS y nombre de tabla.
-4. Completar `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `DEMO_USER` y `DEMO_PASSWORD` en Render. Si se usan credenciales temporales, agregar también `AWS_SESSION_TOKEN` y prever su renovación.
-5. Desplegar. El comando de construcción es `npm ci --include=dev && npm run build`; el de inicio, `npm start`. La raíz del servicio es la raíz del repositorio, no `backend` ni `frontend`.
-6. Abrir la URL HTTPS, introducir el acceso de evaluación y completar el recorrido de prueba indicado abajo.
-7. Registrar la URL obtenida y las credenciales de evaluación en el medio privado acordado con el profesor. No incluir contraseñas ni claves de AWS en el repositorio.
-
-La instancia actual está disponible en [https://asistencia-sismos.onrender.com/](https://asistencia-sismos.onrender.com/). Cualquier cambio enviado a la rama `main` activa un nuevo despliegue automático en Render.
-
-También puede crearse un Web Service manual con los mismos comandos y variables. `/health` es una sonda pública de proceso, **no verifica la conexión con DynamoDB**; comprobar la base con una operación real de la aplicación. [Blueprints de Render](https://render.com/docs/blueprint-spec).
-
-La primera apertura puede tardar aproximadamente un minuto o más si Render debe reactivar el servicio gratuito tras 15 minutos sin tráfico. El profesor no necesita instalar herramientas ni tener cuenta AWS para probar la URL. [Condiciones de Render](https://render.com/docs/free).
-
-## Recorrido de evaluación
-
-1. Abrir la URL y usar el acceso compartido de evaluación; esperar si Render está reactivándose.
-2. Consultar los casos ficticios cargados previamente.
-3. Registrar una solicitud con documento ficticio que incluya ceros iniciales.
-4. Abrir “Ver / editar”, comprobar los atributos y modificar las observaciones.
-5. Cambiar el estado a “En atención” o “Atendida” y probar el filtro.
-6. Recargar y volver a consultar. En la consola AWS, verificar el ítem por su `solicitudId` en **Explorar elementos**.
-7. Para verificar independencia del proceso, reiniciar el backend durante una prueba controlada y comprobar que DynamoDB conserva el registro.
-
-## Verificación y límites
-
-```powershell
-npm test
-npm run build
-```
-
-Las pruebas automatizadas verifican el contrato HTTP, validaciones, metadatos, paginación, errores, acceso de evaluación y las condiciones enviadas al SDK. Usan memoria y un cliente simulado; **no certifican una conexión real con AWS**.
-
-Alcance inicial: registrar, listar, consultar, editar y cambiar estado. No hay eliminación, mapas, archivos adjuntos, notificaciones ni gestión de usuarios. Los estados pueden cambiarse en cualquier dirección. La última edición prevalece en cambios concurrentes del mismo campo; no hay control de versiones.
-
-### Problemas frecuentes
-
-- **`access-analyzer:ValidatePolicy` denegado por una SCP al editar IAM:** la sesión no puede ejecutar el análisis de la política. No equivale a un error de sintaxis del JSON ni demuestra que DynamoDB esté bloqueado. Comprobar que la política se guardó y está adjunta al usuario; verificar luego el acceso con una operación real. Un permiso IAM adicional no anula una denegación explícita de la organización. Si se necesita esa acción, debe revisarla el administrador de la organización. El `us-east-1` del mensaje de Access Analyzer no cambia la región `us-east-2` de la tabla.
-- **Error de almacenamiento:** revisar región, nombre de tabla, credenciales y permisos; no probar con memoria y presentarlo como DynamoDB.
-- **403 de AWS o `AccessDeniedException`:** verificar la política sobre el ARN exacto de la tabla.
-- **Credenciales vencidas:** renovar también `AWS_SESSION_TOKEN` si corresponde.
-- **El frontend no aparece en el puerto 3000:** ejecutar `npm run build` antes de `npm start`.
-- **Puerto 5173 ocupado:** cerrar la otra instancia de Vite; se usa un puerto fijo para evitar confusión.
-- **Backend en otro puerto:** actualizar el proxy en `frontend/vite.config.js`.
-- **Página sin coincidencias y botón “Cargar más”:** es normal al filtrar un `Scan`; continuar para revisar las siguientes páginas.
-
-Al terminar la evaluación, acordar con el grupo la conservación de los datos antes de eliminar recursos. Si ya no se necesitan, eliminar el servicio en Render y la tabla en AWS, y revocar las credenciales dedicadas. No hay script de borrado automático.

@@ -1,28 +1,42 @@
 # Contrato de la API
 
-Base: `/api`. JSON de entrada y salida. Fechas de seguimiento UTC; `fechaSismo` es solo una fecha. Identificadores UUID. Esta versión usa los valores definidos en `backend/src/validation/solicitud.js`.
+Este documento describe la API del proyecto. La base es `/api` y todas las respuestas principales usan JSON.
 
-## Rutas
+## 1. Resumen
 
-| Método | Ruta | Resultado |
+La aplicación permite registrar, consultar, listar y actualizar solicitudes de asistencia por sismos.
+
+### Endpoints principales
+
+| Método | Ruta | Descripción |
 | --- | --- | --- |
-| GET | `/health` | `200 { "status": "ok" }`; sonda de proceso fuera de `/api`. |
-| GET | `/api/config` | `200 { "data": { "storageMode": "dynamodb" } }` o `memory`. Informa configuración, no conectividad. |
-| POST | `/api/solicitudes` | `201 { "data": solicitud }` y encabezado `Location`. |
-| GET | `/api/solicitudes` | `200 { "data": [...], "nextCursor": null o string }`. |
-| GET | `/api/solicitudes/:id` | `200 { "data": solicitud }`. |
-| PUT | `/api/solicitudes/:id` | Reemplaza los campos editables y devuelve el ítem actualizado. |
-| PATCH | `/api/solicitudes/:id/estado` | Cambia estado y devuelve el ítem actualizado. |
+| GET | `/health` | Verifica que la API esté activa. |
+| GET | `/api/config` | Devuelve la configuración activa del almacenamiento (`dynamodb` o `memory`). |
+| POST | `/api/solicitudes` | Crea una nueva solicitud. |
+| GET | `/api/solicitudes` | Lista solicitudes con filtros y paginación básica. |
+| GET | `/api/solicitudes/:id` | Consulta una solicitud por su identificador. |
+| PUT | `/api/solicitudes/:id` | Actualiza una solicitud completa. |
+| PATCH | `/api/solicitudes/:id/estado` | Actualiza solo el estado de la solicitud. |
 
-## Registrar y editar
+## 2. Crear una solicitud
 
-Enviar `Content-Type: application/json`. POST y PUT reciben el mismo cuerpo:
+### Endpoint
+
+`POST /api/solicitudes`
+
+### Headers
+
+```http
+Content-Type: application/json
+```
+
+### Body
 
 ```json
 {
   "nombre": "Persona ficticia",
   "documento": "000123",
-  "telefono": "0000000000",
+  "telefono": "3000000000",
   "municipio": "Tunja",
   "direccion": "Dirección ficticia, zona norte",
   "fechaSismo": "2026-08-20",
@@ -32,54 +46,125 @@ Enviar `Content-Type: application/json`. POST y PUT reciben el mismo cuerpo:
 }
 ```
 
-El backend agrega `solicitudId`, `estado=PENDIENTE`, `fechaSolicitud` y `fechaActualizacion`. No enviar esos campos en POST o PUT: se rechazan, igual que cualquier campo desconocido. PUT mantiene el ID, el estado actual y la fecha original de solicitud; actualiza `fechaActualizacion`. PUT requiere todos los campos obligatorios; omitir `magnitud` la deja en `null` y omitir `observaciones` la deja en `""`.
+### Campos que el backend agrega automáticamente
 
-Los tipos y límites completos están en el README. El documento se envía como texto, nunca como número. `magnitud` se envía como número o `null`, nunca como texto vacío. `fechaSismo` usa `YYYY-MM-DD` sin conversión de zona horaria.
+- `solicitudId`
+- `estado` = `PENDIENTE`
+- `fechaSolicitud`
+- `fechaActualizacion`
 
-## Cambiar estado
+No se deben enviar esos campos desde el cliente porque el sistema los genera.
 
-```json
-{ "estado": "EN_ATENCION" }
-```
+### Validaciones principales
 
-Valores admitidos: `PENDIENTE`, `EN_ATENCION`, `ATENDIDA`. Se permite cualquier transición en esta versión. `fechaActualizacion` cambia automáticamente.
+- `nombre`: obligatorio
+- `documento`: obligatorio
+- `telefono`: obligatorio
+- `municipio`: obligatorio
+- `direccion`: obligatorio
+- `fechaSismo`: formato `YYYY-MM-DD`
+- `magnitud`: número o `null`
+- `tipoAyuda`: uno de los valores permitidos
+- `observaciones`: opcional
 
-## Listar y filtrar
+## 3. Listar solicitudes
+
+### Endpoint
+
+`GET /api/solicitudes`
+
+### Query params
 
 ```text
 GET /api/solicitudes?limit=20&estado=PENDIENTE
 GET /api/solicitudes?limit=20&estado=PENDIENTE&cursor=VALOR_DEVUELTO
 ```
 
-- `limit`: entero entre 1 y 100; predeterminado 20.
-- `estado`: opcional, uno de los tres estados.
-- `cursor`: token opaco de la respuesta anterior. No construirlo manualmente. Codificarlo con `URLSearchParams`.
-- Mantener el mismo filtro al continuar. Al cambiarlo, descartar el cursor y el listado anterior.
-- `nextCursor=null` indica que no hay otra página; la longitud de `data` no lo determina.
-- `data` puede estar vacío y aun así contener `nextCursor` por el filtro posterior a la lectura.
-- No se proporciona orden global, total global ni paginación por número de página.
+Parámetros:
 
-## Errores
+- `limit`: número entero entre 1 y 100
+- `estado`: opcional, valores permitidos: `PENDIENTE`, `EN_ATENCION`, `ATENDIDA`
+- `cursor`: token para paginación, devuelto por la API en la respuesta anterior
+
+### Respuesta esperada
+
+```json
+{
+  "data": [
+    {
+      "solicitudId": "uuid",
+      "nombre": "Persona ficticia",
+      "estado": "PENDIENTE"
+    }
+  ],
+  "nextCursor": null
+}
+```
+
+## 4. Consultar y actualizar una solicitud
+
+### Consultar por id
+
+`GET /api/solicitudes/:id`
+
+### Actualizar completa
+
+`PUT /api/solicitudes/:id`
+
+Este endpoint reemplaza los campos editables de la solicitud y actualiza `fechaActualizacion`.
+
+### Cambiar solo estado
+
+`PATCH /api/solicitudes/:id/estado`
+
+Body:
+
+```json
+{
+  "estado": "EN_ATENCION"
+}
+```
+
+Valores admitidos:
+
+- `PENDIENTE`
+- `EN_ATENCION`
+- `ATENDIDA`
+
+## 5. Respuestas de error
+
+La API devuelve errores con este formato:
 
 ```json
 {
   "error": {
     "message": "Revisa los datos enviados.",
-    "details": [{ "field": "nombre", "message": "Detalle de validación" }]
+    "details": [
+      {
+        "field": "nombre",
+        "message": "Detalle de validación"
+      }
+    ]
   }
 }
 ```
 
-| Estado HTTP | Significado |
+### Códigos HTTP más comunes
+
+| Código | Significado |
 | --- | --- |
-| 400 | Entrada, ID, consulta, cursor o JSON inválido. |
-| 401 | Falta el acceso de evaluación si está configurado. |
-| 404 | Solicitud o ruta inexistente. Editar una solicitud inexistente no la crea. |
-| 413 | Cuerpo mayor a 32 KB. |
-| 503 | Fallo de acceso al almacenamiento. Nunca se devuelve una lista ficticia como sustituto. |
+| 400 | Datos inválidos o solicitud mal formada. |
+| 401 | Autenticación requerida. |
+| 404 | Ruta o solicitud no encontrada. |
+| 413 | Cuerpo demasiado grande. |
+| 503 | Error al acceder al almacenamiento. |
 
-`details` solo se incluye para validación. No depender del texto exacto de los mensajes de Zod. El frontend debe mostrar el error y permitir reintentar.
+## 6. Seguridad y desarrollo
 
-## Autenticación y desarrollo
+- Las credenciales de AWS se manejan solo en el backend.
+- No se exponen en el navegador.
+- Si está configurada, la autenticación HTTP Basic protege la API y la interfaz.
+- En desarrollo, el proyecto puede ejecutarse en modo demo sin usar DynamoDB real.
 
-Las credenciales de AWS solo existen en el backend. El acceso HTTP Basic de evaluación, si se configura, protege interfaz y API excepto `/health`; no se debe hardcodear en el frontend. En Render se utiliza HTTPS. En desarrollo sin acceso configurado, `npm run dev:demo` permite probar directamente.
+## 7. Nota
+Este documento es útil para entender cómo se comunica la aplicación con el backend y cómo se estructuran las solicitudes.
