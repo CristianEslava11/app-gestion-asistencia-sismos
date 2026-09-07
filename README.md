@@ -11,7 +11,6 @@ Aplicación para registrar solicitudes de personas afectadas por sismos y realiz
 **Integrantes:** Cristian Eslava, Alisson Páez, David Sanchez, Karolain Giraldo, Angel Castro.
 
 **Documento para entender la estrcutura proyecto:** [API](docs/API.md).
----
 
 ## Arquitectura
 El usuario puede acceder a la aplicación desde el navegador, ya que está publicada en Render, donde funcionan tanto el backend como el frontend. El backend se conecta a DynamoDB para guardar y consultar las solicitudes.
